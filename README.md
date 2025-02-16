@@ -1,13 +1,25 @@
-Main file is maze-explorer.py, utils.py contains utiilty functions that perform specific tasks, like visualizing the matrix, generating a maze, etc.
+# Maze Explorer Project
 
-Current state of the project:
-Maze is generated
-Maze is visualized
+## Main Files
+- **maze-explorer.py**: Main script to run the maze exploration.
+- **utils.py**: Contains utility functions for:
+  - Visualizing the matrix
+  - Generating the maze
+  - Other helper functions
 
-To do:
-Solve the maze with repeated A*, and other A* methods like backward solution, etc (Max, Angel)
-Visualize solution (Daniil)
+## Current State
+✅ Maze is generated  
+✅ Maze is visualized  
 
-Answer theoretical questions, report observations, etc (TBD)
-Optional: LATEX report for extra credit (Daniil)
+## To-Do List
+### Algorithm Implementation
+- [ ] Solve the maze using **Repeated A*** and other **A*** methods (e.g., backward solution) *(Max, Angel)*
+- [ ] Visualize the solution *(Daniil)*
+
+### Theoretical Analysis
+- [ ] Answer theoretical questions, report observations *(TBD)*
+
+### Optional Enhancements
+- [ ] **LaTeX Report** for extra credit *(Daniil)*
+
 
