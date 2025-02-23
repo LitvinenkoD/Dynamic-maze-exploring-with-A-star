@@ -61,7 +61,8 @@ def generate_agent_goal_coords(maze, empty_cell):
         empty_cells.append((i, j))
   return random.sample(empty_cells, 2)
 
-
+def manhattan_distance(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
 
