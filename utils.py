@@ -1,6 +1,9 @@
 import random
 import pygame
 import utils
+import heapq
+
+### maze generation related
 def return_unvisited_neibhors(coords, visited, M, N):
   i, j = coords
   res = []
@@ -18,8 +21,6 @@ def return_unvisited_neibhors(coords, visited, M, N):
     res.append((i, j - 1))
 
   return res
-
-
 
 
 def generate_maze(maze, visited, unvisited, wall_cell, M, N):
@@ -61,10 +62,9 @@ def generate_agent_goal_coords(maze, empty_cell):
         empty_cells.append((i, j))
   return random.sample(empty_cells, 2)
 
-def manhattan_distance(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
+### visualization
 
 def visualize_maze(maze, M, N, symbols):
   empty_cell, wall_cell, agent_cell, goal_cell, path_cell = symbols
@@ -83,7 +83,7 @@ def visualize_maze(maze, M, N, symbols):
   BACKGROUND = (215, 210, 195)  # Muted Sand (#D7D2C3)
   WALLS = (40, 45, 50)          # Deep Charcoal (#282D32)
   AGENT = (0, 120, 210)         # Electric Blue (#0078D2)
-  PATH = (80, 140, 190)         # Muted Steel Blue (#508CBE)
+  PATH = (202, 220, 235)        # light blue
   GOAL = (220, 80, 10)          # Deep Orange (#DC500A)
 
 
@@ -144,3 +144,83 @@ def visualize_maze(maze, M, N, symbols):
     pygame.display.flip()
 
   pygame.quit()
+
+
+
+### A* related
+
+def manhattan_distance(a, b):
+  return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def return_neibhors(coords, M, N):
+  i, j = coords
+  res = []
+  if i + 1 < M:
+    res.append((i + 1, j))
+
+  if i - 1 >= 0:
+    res.append((i - 1, j))
+
+
+  if j + 1 < N:
+    res.append((i, j + 1))
+
+  if j - 1 >= 0:
+    res.append((i, j - 1))
+
+  return res
+
+
+def update_map_with_walls(walls_list, maze_map, wall_cell):
+  for coords in walls_list:
+    maze_map[coords[0]][coords[1]] = wall_cell
+  return maze_map
+
+
+# add neibhors of a cell to the open list (and the closed list too)
+def expand_cell(coords, maze_map, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N):
+  nonwall_neighbors = list(filter(lambda coords: maze_map[coords[0]][coords[1]] != wall_cell, utils.return_neibhors(coords, M, N)))
+
+  for neighbor in nonwall_neighbors:
+    if neighbor not in closed_list:
+      g_value = utils.manhattan_distance(agent_coords, neighbor)
+      h_value = utils.manhattan_distance(goal_coords, neighbor)
+      f_value = g_value + h_value
+
+      parents[neighbor] = coords
+
+      # heap format: (f_cost, g or -g cost, coordinates of cell)
+      if TIE_BREAK == "higher g":
+        heapq.heappush(open_list, (f_value, -g_value, neighbor))
+
+      elif TIE_BREAK == "lower g":
+        heapq.heappush(open_list, (f_value, g_value, neighbor))
+
+      closed_list.add(neighbor)
+
+
+def find_shortest_path_with_AStar(agent_coords, goal_coords, maze_map, wall_cell, TIE_BREAK, M, N):
+  # initialize variables needed for the A*
+  open_list = [(0, 0, agent_coords)]
+  heapq.heapify(open_list)
+  closed_list = {agent_coords}
+  parents = {agent_coords: None} # lists the parent of every expanded cell
+
+  print(f"agent coords are {agent_coords}, goal coords are {goal_coords}")
+
+
+  path = []
+  while open_list:
+    next_cell_coords = heapq.heappop(open_list)[2]
+    if next_cell_coords == goal_coords:
+      path.append(next_cell_coords)
+      while parents[next_cell_coords]:
+        if parents[next_cell_coords] != agent_coords:
+          path.append(parents[next_cell_coords])
+        next_cell_coords = parents[next_cell_coords]
+      
+      return path
+    
+    utils.expand_cell(next_cell_coords, maze_map, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N)
+  return path
