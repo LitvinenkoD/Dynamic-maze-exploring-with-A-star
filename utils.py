@@ -23,7 +23,7 @@ def return_unvisited_neibhors(coords, visited, M, N):
   return res
 
 
-def generate_maze(maze, visited, unvisited, wall_cell, M, N):
+def fill_maze(maze, visited, unvisited, wall_cell, M, N):
   # repeatedly choose a rand starting point, run a full DFS from it, and do it until
   # all nodes are visited
   while unvisited:
@@ -53,7 +53,6 @@ def generate_maze(maze, visited, unvisited, wall_cell, M, N):
         stack.pop()
   return maze
 
-
 def generate_agent_goal_coords(maze, empty_cell):
   empty_cells = []
   for i, row in enumerate(maze):
@@ -61,6 +60,28 @@ def generate_agent_goal_coords(maze, empty_cell):
       if cell == empty_cell:
         empty_cells.append((i, j))
   return random.sample(empty_cells, 2)
+
+
+def generate_maze_and_maze_map(empty_cell, wall_cell, agent_cell, goal_cell, M, N):
+  # generate an empty maze, a filled unvisited set, and an empty visited set
+  maze = [[empty_cell for _ in range(N)] for _ in range(M)]
+  maze_map = [[empty_cell for _ in range(N)] for _ in range(M)] 
+  unvisited = {(a, b) for a in range(M) for b in range(N)}
+  visited = set()
+
+  # populate the maze with walls
+  maze = utils.fill_maze(maze, visited, unvisited, wall_cell, M, N)
+
+  # choose random goal and agent coords
+  agent_coords, goal_coords = utils.generate_agent_goal_coords(maze, empty_cell)
+  maze[agent_coords[0]][agent_coords[1]] = agent_cell
+  maze[goal_coords[0]][goal_coords[1]] = goal_cell
+
+  # add coords for self and the goal
+  maze_map[agent_coords[0]][agent_coords[1]] = agent_cell
+  maze_map[goal_coords[0]][goal_coords[1]] = goal_cell
+
+  return [maze, maze_map, agent_coords, goal_coords]
 
 
 
@@ -179,13 +200,16 @@ def update_map_with_walls(walls_list, maze_map, wall_cell):
 
 
 # add neibhors of a cell to the open list (and the closed list too)
-def expand_cell(coords, maze_map, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N):
+def expand_cell(coords, maze_map, heuristics_table, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N):
   nonwall_neighbors = list(filter(lambda coords: maze_map[coords[0]][coords[1]] != wall_cell, utils.return_neibhors(coords, M, N)))
 
   for neighbor in nonwall_neighbors:
     if neighbor not in closed_list:
       g_value = utils.manhattan_distance(agent_coords, neighbor)
-      h_value = utils.manhattan_distance(goal_coords, neighbor)
+      if neighbor in heuristics_table:
+        h_value = heuristics_table[neighbor]
+      else:
+        h_value = utils.manhattan_distance(goal_coords, neighbor)
       f_value = g_value + h_value
 
       parents[neighbor] = coords
@@ -200,14 +224,19 @@ def expand_cell(coords, maze_map, open_list, closed_list, parents, agent_coords,
       closed_list.add(neighbor)
 
 
-def find_shortest_path_with_AStar(agent_coords, goal_coords, maze_map, wall_cell, TIE_BREAK, M, N):
+def find_shortest_path_with_AStar(orientation, agent_coords, goal_coords, heuristics_table, maze_map, wall_cell, TIE_BREAK, M, N):
   # initialize variables needed for the A*
+
+  if orientation == 'reverse':
+    agent_coords, goal_coords = goal_coords, agent_coords
+
   open_list = [(0, 0, agent_coords)]
   heapq.heapify(open_list)
   closed_list = {agent_coords}
   parents = {agent_coords: None} # lists the parent of every expanded cell
+  expanded_cells = 0
 
-  print(f"agent coords are {agent_coords}, goal coords are {goal_coords}")
+  # print(f"agent coords are {agent_coords}, goal coords are {goal_coords}")
 
 
   path = []
@@ -220,7 +249,13 @@ def find_shortest_path_with_AStar(agent_coords, goal_coords, maze_map, wall_cell
           path.append(parents[next_cell_coords])
         next_cell_coords = parents[next_cell_coords]
       
-      return path
+      if orientation == 'normal':
+        return (path[::-1], expanded_cells)
+      
+      return (path[1:] + [agent_coords], expanded_cells) # needed to format the reverse path
     
-    utils.expand_cell(next_cell_coords, maze_map, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N)
-  return path
+    utils.expand_cell(next_cell_coords, maze_map, heuristics_table, open_list, closed_list, parents, agent_coords, goal_coords, wall_cell, TIE_BREAK, M, N)
+    expanded_cells += 1
+  if orientation == 'normal':
+    return (path[::-1], expanded_cells)
+  return (path[1:], expanded_cells)
