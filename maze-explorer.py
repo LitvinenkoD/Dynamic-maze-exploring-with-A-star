@@ -24,8 +24,8 @@ TIE_BREAK = "higher g"
 orientation = 'normal'
 # orientation = 'reverse'
 
-visualize = False
-# visualize = True
+# visualize = False
+visualize = True
 
 # after a demonstrative run of the algorithm, perform computation heavy tests such as:
 # generate 50 mazes, try to solve them, do Forward vs Backward on them, do Adaptive vs Repeated,
@@ -163,6 +163,8 @@ if visualize:
 ##############################################
 if not performAllTests:
   sys.exit(0)
+
+visualize = False
 
 
 ## Forward vs Backward repeated A*, 
